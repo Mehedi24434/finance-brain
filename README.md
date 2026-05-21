@@ -96,6 +96,86 @@ transcription fails, the original audio URL is saved on a stub task.
 The outbound `sendMessage` is gated on the DB column being set, so
 nothing leaks until you've explicitly clicked **Link Telegram**.
 
+## Slack integration
+
+Slack messages flow in via Events API. Matching messages (containing `$`
+or any of `approve | urgent | blocked | PO | invoice | vendor | audit |
+plant | procurement | escalation | waiting`) become `inbox_items` rows
+that are then triaged by Claude.
+
+### One-time setup
+
+1. Create a Slack app at https://api.slack.com/apps.
+2. Under **OAuth & Permissions** → Bot Token Scopes, add:
+   - `channels:history`, `channels:read`
+   - `groups:history`
+   - `chat:write`
+   - `users:read`
+3. Install the app to your workspace and copy the Bot User OAuth Token
+   (`xoxb-...`) into `SLACK_BOT_TOKEN`.
+4. Copy the Signing Secret from **Basic Information** into
+   `SLACK_SIGNING_SECRET`.
+5. Find your own Slack user id (it's the `U...` value in your profile
+   URL or via /api/admin/slack-test once you boot the app) and set
+   `SLACK_LUKE_USER_ID`.
+6. Under **Event Subscriptions**:
+   - Toggle on, set Request URL to
+     `https://<your-vercel-domain>/api/webhooks/slack`.
+   - Slack will send a `url_verification` ping; the route handler
+     answers with the challenge automatically.
+   - Subscribe to bot events: `message.channels`, `message.groups`,
+     `app_mention`.
+7. Invite the bot into the channels you want monitored.
+8. Open the app's **Settings → Integrations → Slack**, click
+   **Load channels**, pick the channels to monitor, and **Save
+   selection**. (If you save an empty selection the bot listens to every
+   channel it's a member of.)
+9. **Send test DM** confirms the bot can post back to Luke.
+
+## Google integration (Gmail + Calendar)
+
+A single OAuth grant covers both services. Gmail sync pulls up to 10
+new messages per run, triages each through Claude, and surfaces them in
+the inbox. Calendar sync pulls the next 7 days into Meeting Notes so
+each one can be pre-briefed.
+
+### One-time setup
+
+1. In **Google Cloud Console**, create an OAuth client (Application type
+   = Web). Add Authorized redirect URIs:
+   - `https://<your-vercel-domain>/api/auth/google/callback`
+   - `http://localhost:3000/api/auth/google/callback` (for local dev)
+2. Enable the Gmail API and Google Calendar API on the project.
+3. Add these scopes (under OAuth consent screen → Scopes for Google APIs):
+   - `https://www.googleapis.com/auth/gmail.readonly`
+   - `https://www.googleapis.com/auth/gmail.send`
+   - `https://www.googleapis.com/auth/calendar.readonly`
+4. Copy the client id + secret into `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET`. Set `GOOGLE_REDIRECT_URI` to the exact URI
+   you registered.
+5. Set `GOOGLE_STATE_SECRET` to any random ~32-char string (used to
+   HMAC-sign the OAuth `state` so the callback can verify CSRF).
+6. Open the app's **Settings → Integrations → Google**, click
+   **Connect Google**, and complete the consent flow.
+
+### What runs
+
+- **Gmail sync** — filter `from:(*.com) -in:promotions newer_than:7d`
+  (configurable per-account in the Settings card). Caps at 10 new
+  messages per run; triages each in parallel. Total wall-clock ~15s.
+- **Calendar sync** — `events.list` on the primary calendar for the
+  next 7 days. Upserts by `calendar_event_id` so reruns are idempotent.
+- **Pre-brief** — for any meeting on the dashboard, click *Brief me* to
+  generate a 3-4 paragraph briefing referencing related open tasks and
+  recent emails from the attendees.
+- **Send via Gmail** — on any Gmail-sourced inbox row in `/inbox`, the
+  *Send via Gmail* action posts the (optionally edited) suggested
+  response with proper `In-Reply-To` / `References` headers so the
+  thread stays threaded.
+
+Both syncs together can be triggered manually from the Settings card's
+**Sync now** button. Session 7 wires this to a cron.
+
 ## Project layout
 
 ```

@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { Calendar } from "lucide-react";
 import EmptyState from "../empty-state";
 import PanelShell from "../panel-shell";
+import MeetingBriefSheet from "../meeting-brief-sheet";
 
 export default async function UpcomingMeetingsPanel() {
   const db = createServiceRoleClient();
@@ -61,11 +62,18 @@ export default async function UpcomingMeetingsPanel() {
                       </div>
                     )}
                   </div>
-                  {m.pre_brief && (
-                    <span className="text-[10px] uppercase tracking-wider font-mono text-ok shrink-0">
-                      Briefed
-                    </span>
-                  )}
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    {m.pre_brief && (
+                      <span className="text-[10px] uppercase tracking-wider font-mono text-ok">
+                        Briefed
+                      </span>
+                    )}
+                    <MeetingBriefSheet
+                      meetingId={m.id}
+                      meetingTitle={m.title}
+                      initialPreBrief={m.pre_brief ?? null}
+                    />
+                  </div>
                 </div>
               </li>
             );

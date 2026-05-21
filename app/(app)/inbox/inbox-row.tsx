@@ -39,9 +39,31 @@ export default function InboxRow({ item }: { item: InboxRowItem }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.suggested_response ?? "");
   const [busy, setBusy] = useState(false);
+  const canSendViaGmail = item.source === "email";
 
-  function notImplemented(label: string) {
-    toast.info(`${label} wires up when Gmail integration lands.`);
+  async function sendReply() {
+    if (busy) return;
+    setBusy(true);
+    const toastId = toast.loading("Sending via Gmail…");
+    try {
+      const res = await fetch(`/api/inbox/${item.id}/send-reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: editing ? draft : undefined }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Failed (${res.status})`);
+      }
+      toast.success("Reply sent", { id: toastId });
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Send failed", {
+        id: toastId,
+      });
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function dismiss() {
@@ -49,7 +71,6 @@ export default function InboxRow({ item }: { item: InboxRowItem }) {
     setBusy(true);
     try {
       toast.success("Dismissed — wire up the inbox status endpoint in Session 5.");
-      // Future: POST /api/inbox/[id]/dismiss
       router.refresh();
     } finally {
       setBusy(false);
@@ -143,16 +164,21 @@ export default function InboxRow({ item }: { item: InboxRowItem }) {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={!item.suggested_response}
-                onClick={() => notImplemented("Send")}
+                disabled={!item.suggested_response || !canSendViaGmail || busy}
+                onClick={sendReply}
+                title={
+                  !canSendViaGmail
+                    ? "Only Gmail items can be sent via Gmail"
+                    : undefined
+                }
               >
                 <Send className="size-3" />
-                Send
+                {busy ? "Sending…" : canSendViaGmail ? "Send via Gmail" : "Send"}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                disabled={!item.suggested_response}
+                disabled={!item.suggested_response || busy}
                 onClick={() => setEditing((e) => !e)}
               >
                 <Pencil className="size-3" />
