@@ -66,6 +66,9 @@ export default async function SettingsPage() {
       lastSyncAt: googleRow?.last_sync_at ?? null,
       errorMessage: googleRow?.error_message ?? null,
     },
+    anthropic: {
+      envConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+    },
   };
 
   return (

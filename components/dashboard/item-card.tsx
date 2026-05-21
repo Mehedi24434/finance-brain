@@ -95,6 +95,7 @@ export default function ItemCard({
         className={cn(
           "absolute left-0 top-2 bottom-2 w-[3px] rounded-full",
           STRIPE_BG[severity],
+          severity === "urgent" && "urgent-stripe",
         )}
       />
       <div className="flex items-start gap-3 min-w-0">

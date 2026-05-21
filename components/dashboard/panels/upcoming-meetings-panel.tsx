@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { Calendar } from "lucide-react";
+import { timeLabel } from "@/lib/panels";
 import EmptyState from "../empty-state";
 import PanelShell from "../panel-shell";
 import MeetingBriefSheet from "../meeting-brief-sheet";
@@ -28,8 +29,7 @@ export default async function UpcomingMeetingsPanel() {
         <ul className="divide-y divide-border">
           {rows.map((m) => {
             const dt = new Date(m.meeting_date);
-            const day = format(dt, "EEE MMM d");
-            const time = format(dt, "p");
+            const when = timeLabel(m.meeting_date) ?? format(dt, "EEE MMM d");
             const attendees =
               (m.attendees ?? []).slice(0, 3).join(", ") +
               ((m.attendees?.length ?? 0) > 3
@@ -52,9 +52,7 @@ export default async function UpcomingMeetingsPanel() {
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-text-secondary">
                       <Calendar className="size-3" />
-                      <span>
-                        {day} · {time}
-                      </span>
+                      <span className="font-mono">{when}</span>
                     </div>
                     {attendees && (
                       <div className="text-[11px] text-text-tertiary truncate">

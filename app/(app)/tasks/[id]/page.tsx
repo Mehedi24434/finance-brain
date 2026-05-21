@@ -126,6 +126,7 @@ export default async function TaskDetailPage({
             className={cn(
               "absolute left-0 top-4 bottom-4 w-[3px] rounded-full",
               STRIPE_BG[severity],
+              severity === "urgent" && "urgent-stripe",
             )}
           />
           <div className="flex items-start justify-between gap-3">

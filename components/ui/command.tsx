@@ -49,10 +49,6 @@ function CommandDialog({
 }) {
   return (
     <Dialog {...props}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
       <DialogContent
         className={cn(
           "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
@@ -60,7 +56,15 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        {/* The <Command> wrapper is REQUIRED — cmdk's Input/List/Item
+            subscribe to a context provided by the Command root. Without
+            it the components see an undefined store and crash with
+            "Cannot read properties of undefined (reading 'subscribe')". */}
+        <Command className="rounded-lg">{children}</Command>
       </DialogContent>
     </Dialog>
   )

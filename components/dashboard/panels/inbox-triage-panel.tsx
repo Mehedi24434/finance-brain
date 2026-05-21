@@ -80,10 +80,14 @@ export default async function InboxTriagePanel() {
         <EmptyState title="Inbox triaged — no pending finance threads" />
       ) : (
         <ul className="divide-y divide-border">
-          {rows.map((r) => (
+          {rows.map((r) => {
+            const baseSeverity = severityForClassification(r.classification);
+            const severity =
+              (r.urgency_score ?? 0) >= 90 ? "urgent" : baseSeverity;
+            return (
             <li key={r.id}>
               <ItemCard
-                severity={severityForClassification(r.classification)}
+                severity={severity}
                 title={r.subject ?? "(no subject)"}
                 category={r.category}
                 source={r.source as never}
@@ -109,7 +113,8 @@ export default async function InboxTriagePanel() {
                 {!r._triaged && <TriageButton inboxId={r.id} />}
               </ItemCard>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </PanelShell>

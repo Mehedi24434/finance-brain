@@ -174,7 +174,48 @@ each one can be pre-briefed.
   thread stays threaded.
 
 Both syncs together can be triggered manually from the Settings card's
-**Sync now** button. Session 7 wires this to a cron.
+**Sync now** button. The 10-minute cron picks them up automatically once
+deployed.
+
+## Scheduled jobs (Vercel Cron)
+
+[vercel.json](vercel.json) registers three crons. All three hit endpoints
+that require `Authorization: Bearer ${CRON_SECRET}` — Vercel attaches
+that header automatically when `CRON_SECRET` is set in the project's
+env vars.
+
+| Path | Schedule (UTC) | Purpose |
+| ---- | -------------- | ------- |
+| `/api/cron/briefing`  | `30 10 * * *` (10:30 UTC daily) | Generate today's executive briefing if missing, push to Telegram. |
+| `/api/cron/reminders` | `* * * * *` (every minute)      | Fire `reminders` rows where `status='scheduled'` and `remind_at <= now()`, batch 50. |
+| `/api/cron/sync`      | `*/10 * * * *` (every 10 min)   | Run Gmail + Calendar sync (no-op if Google isn't connected). |
+
+The briefing schedule is 10:30 UTC = 06:30 ET. Adjust the cron expression
+in `vercel.json` if you want a different time. For per-user briefing
+times, schedule a few times across the day and have the handler check
+`executive_profile.briefing_time` before running.
+
+### Local development
+
+You can fire each cron by hand with curl:
+
+```
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/briefing
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/reminders
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync
+```
+
+Or — easier for the demo — open **Settings → Demo controls** and click
+**Run** next to any of the cron jobs. Those buttons call
+`/api/admin/run-cron/{name}` which is authenticated via your Supabase
+session (no secret required from the browser) and dispatches to the
+exact same `lib/cron-jobs.ts` functions the scheduled crons use.
+
+### Audit trail
+
+Every cron invocation writes an `audit_log` entry (`event_type`:
+`cron.briefing` / `cron.reminders` / `cron.sync`) with the run's
+outcome — useful to confirm the schedule is firing once deployed.
 
 ## Project layout
 

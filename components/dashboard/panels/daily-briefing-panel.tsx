@@ -1,8 +1,9 @@
 import { format } from "date-fns";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { OPEN_TASK_STATUSES } from "@/lib/panels";
+import { OPEN_TASK_STATUSES, formatUsd } from "@/lib/panels";
 import PanelShell from "../panel-shell";
 import EmptyState from "../empty-state";
+import AiTag from "../ai-tag";
 import {
   GenerateBriefingButton,
   RegenerateBriefingIcon,
@@ -10,6 +11,20 @@ import {
 
 function todayKey(date = new Date()) {
   return format(date, "yyyy-MM-dd");
+}
+
+function generatedAgo(iso: string | null): string {
+  if (!iso) return "—";
+  const minutes = Math.max(
+    0,
+    Math.round((Date.now() - new Date(iso).getTime()) / 60_000),
+  );
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }
 
 export default async function DailyBriefingPanel() {
@@ -62,10 +77,7 @@ export default async function DailyBriefingPanel() {
         approvals.count !== null && approvals.count !== undefined
           ? approvals.count
           : 0,
-      hint:
-        approvalsTotal > 0
-          ? `$${(approvalsTotal / 1_000_000).toFixed(2)}M total`
-          : undefined,
+      hint: approvalsTotal > 0 ? `${formatUsd(approvalsTotal)} total` : undefined,
     },
     { label: "Aging followups", value: aging.count ?? 0 },
     { label: "Meetings today", value: meetings.count ?? 0 },
@@ -75,7 +87,16 @@ export default async function DailyBriefingPanel() {
     <PanelShell
       title={`Daily briefing · ${format(new Date(), "EEE MMM d")}`}
       counter={briefing ? (briefing.delivered ? "Delivered" : "Ready") : "Pending"}
-      headerExtras={briefing ? <RegenerateBriefingIcon /> : null}
+      headerExtras={
+        briefing ? (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wider font-mono text-text-tertiary">
+              {generatedAgo(briefing.generated_at)}
+            </span>
+            <RegenerateBriefingIcon />
+          </div>
+        ) : null
+      }
     >
       {!briefing ? (
         <EmptyState
@@ -105,12 +126,15 @@ export default async function DailyBriefingPanel() {
               </div>
             ))}
           </div>
-          <div className="lg:col-span-8 text-[13px] text-text-primary leading-relaxed whitespace-pre-wrap">
-            {briefing.executive_summary ?? (
-              <span className="text-text-tertiary">
-                Briefing exists but executive_summary is empty.
-              </span>
-            )}
+          <div className="lg:col-span-8 relative pr-7">
+            <AiTag />
+            <div className="text-[13px] text-text-primary leading-relaxed whitespace-pre-wrap">
+              {briefing.executive_summary ?? (
+                <span className="text-text-tertiary">
+                  Briefing exists but executive_summary is empty.
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}

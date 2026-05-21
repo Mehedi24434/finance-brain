@@ -98,3 +98,21 @@ body {
     border-color: var(--color-border);
   }
 }
+
+/* Slow pulse used on severity stripes for urgent items. Subtle on
+ * camera — the bar fades 100→55→100 over 1.8s. */
+@keyframes urgent-stripe-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 var(--color-urgent);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 6px 0 color-mix(in srgb, var(--color-urgent) 60%, transparent);
+  }
+}
+
+.urgent-stripe {
+  animation: urgent-stripe-pulse 1.8s ease-in-out infinite;
+}

@@ -1,9 +1,8 @@
-import { format, formatDistanceToNow } from "date-fns";
 import { Bell, MessageCircle, Mail } from "lucide-react";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import EmptyState from "../empty-state";
 import PanelShell from "../panel-shell";
-import { severityForPriority, type Severity } from "@/lib/panels";
+import { severityForPriority, timeLabel, type Severity } from "@/lib/panels";
 import { cn } from "@/lib/utils";
 
 const CHANNEL_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -45,13 +44,14 @@ export default async function ExecutiveRemindersPanel() {
           {rows.map((r) => {
             const ChannelIcon = CHANNEL_ICON[r.channel ?? "in_app"] ?? Bell;
             const severity = severityForPriority(r.priority);
-            const when = formatDistanceToNow(new Date(r.remind_at), { addSuffix: true });
+            const when = timeLabel(r.remind_at) ?? r.remind_at;
             return (
               <li key={r.id} className="relative px-4 py-2.5 hover:bg-hover/40">
                 <span
                   className={cn(
                     "absolute left-0 top-2 bottom-2 w-[3px] rounded-full",
                     STRIPE_BG[severity],
+                    severity === "urgent" && "urgent-stripe",
                   )}
                 />
                 <div className="flex items-start justify-between gap-3">
@@ -61,11 +61,7 @@ export default async function ExecutiveRemindersPanel() {
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-text-secondary">
                       <ChannelIcon className="size-3" />
-                      <span>{when}</span>
-                      <span className="text-text-tertiary">·</span>
-                      <span className="font-mono text-text-tertiary">
-                        {format(new Date(r.remind_at), "HH:mm")}
-                      </span>
+                      <span className="font-mono">{when}</span>
                     </div>
                   </div>
                 </div>

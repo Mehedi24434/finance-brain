@@ -3,6 +3,9 @@ import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { generatePrebrief } from "@/lib/calendar";
 
+// Sonnet pre-brief generation ~5-8s.
+export const maxDuration = 60;
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },

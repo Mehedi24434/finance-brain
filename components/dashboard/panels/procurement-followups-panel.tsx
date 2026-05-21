@@ -1,5 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { severityForPriority, daysUntil } from "@/lib/panels";
+import { severityForPriority, ageDays, ageLabel } from "@/lib/panels";
 import ItemCard from "../item-card";
 import ItemActions from "../item-actions";
 import EmptyState from "../empty-state";
@@ -18,10 +18,9 @@ export default async function ProcurementFollowupsPanel() {
     .limit(8);
 
   const rows = followups ?? [];
-  const aging = rows.filter((f) => {
-    const days = daysUntil(f.last_contacted);
-    return days !== null && days < -3;
-  }).length;
+  const aging = rows.filter(
+    (f) => f.last_contacted && ageDays(f.last_contacted) > 3,
+  ).length;
 
   const counter =
     rows.length === 0
@@ -40,7 +39,9 @@ export default async function ProcurementFollowupsPanel() {
       ) : (
         <ul className="divide-y divide-border">
           {rows.map((f) => {
-            const secondary = [f.contact_name, f.subject].filter(Boolean).join(" · ");
+            const age = ageLabel(f.last_contacted);
+            const parts = [f.contact_name, age].filter(Boolean);
+            const secondary = parts.join(" · ");
             return (
               <li key={f.id}>
                 <ItemCard

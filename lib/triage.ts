@@ -216,7 +216,7 @@ export async function triageInboxItem(id: string): Promise<{
 
     try {
       await sendMessage(
-        `*Urgent finance email* from ${item.sender ?? "(unknown sender)"}:\n` +
+        `Urgent finance email from ${item.sender ?? "(unknown sender)"}:\n` +
           `${item.subject ?? "(no subject)"}\n\n` +
           `Needs your eyes in the next 30 min.`,
       );

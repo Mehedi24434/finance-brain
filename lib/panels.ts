@@ -47,18 +47,85 @@ export function daysUntil(iso: string | null | undefined): number | null {
 export function dueLabel(deadline: string | null | undefined): string | null {
   const d = daysUntil(deadline);
   if (d === null) return null;
-  if (d < 0) return `Overdue ${Math.abs(d)}d`;
-  if (d === 0) return "Due today";
-  if (d === 1) return "Due tomorrow";
-  return `Due in ${d}d`;
+  if (d < 0) return `${Math.abs(d)}d overdue`;
+  if (d === 0) return "due today";
+  if (d === 1) return "due tomorrow";
+  return `due in ${d}d`;
 }
 
+/**
+ * Age in days since a row was created/opened/last contacted.
+ * Returns label like "3d open" or "12d aging" — different from dueLabel
+ * which counts forward to a deadline.
+ *   < 3 days → "{n}d open"
+ *   >= 3 days → "{n}d aging"
+ */
+export function ageLabel(
+  iso: string | null | undefined,
+  opts: { agingThresholdDays?: number } = {},
+): string | null {
+  if (!iso) return null;
+  const days = ageDays(iso);
+  const threshold = opts.agingThresholdDays ?? 3;
+  if (days < 1) return "today";
+  return days >= threshold ? `${days}d aging` : `${days}d open`;
+}
+
+/**
+ * Friendly timestamp formatter.
+ *   today  → "Today 2:30pm"
+ *   yesterday → "Yesterday 9:15am"
+ *   tomorrow → "Tomorrow 8:00am"
+ *   else → "Tue Jun 3"
+ */
+export function timeLabel(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return null;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const dayDiff = Math.round(
+    (target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+  );
+
+  const time = dt
+    .toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .replace(" ", "")
+    .toLowerCase();
+
+  if (dayDiff === 0) return `Today ${time}`;
+  if (dayDiff === -1) return `Yesterday ${time}`;
+  if (dayDiff === 1) return `Tomorrow ${time}`;
+
+  return dt.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/**
+ * Format a USD amount for display.
+ * - Always uses thousands separators ("$185,000" not "$185000").
+ * - Decimals only when the amount is small enough that cents matter
+ *   (under $10,000). Above that, whole dollars.
+ * - Negative values are wrapped in parens, finance convention.
+ */
 export function formatUsd(n: number | null | undefined): string | null {
-  if (n === null || n === undefined) return null;
+  if (n === null || n === undefined || Number.isNaN(n)) return null;
   const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2)}M`;
-  if (abs >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${n.toFixed(0)}`;
+  const decimals = abs < 10_000 ? 2 : 0;
+  const formatted = abs.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return n < 0 ? `($${formatted})` : `$${formatted}`;
 }
 
 export function ageDays(iso: string | null | undefined): number {

@@ -7,6 +7,9 @@ import { triageInboxItem } from "@/lib/triage";
 
 const BATCH_LIMIT = 10;
 
+// Parallel triage of up to 10 items; ~15s wall-clock.
+export const maxDuration = 60;
+
 export async function POST() {
   const auth = await createServerSupabaseClient();
   const {

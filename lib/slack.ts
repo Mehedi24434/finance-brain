@@ -230,26 +230,55 @@ export async function processEvent(
   ).toISOString();
 
   const db = createServiceRoleClient();
+
+  // Pre-check for an existing row (Slack delivers at-least-once and
+  // may retry the same event_ts). The unique index on
+  // inbox_items(source, external_id) is partial — PostgREST can't
+  // target it via `.upsert({ onConflict })`, so we route by hand.
+  const { data: existing } = await db
+    .from("inbox_items")
+    .select("id")
+    .eq("source", "slack")
+    .eq("external_id", externalId)
+    .maybeSingle();
+  if (existing) {
+    return { inboxItemId: existing.id };
+  }
+
   const { data: inserted, error } = await db
     .from("inbox_items")
-    .upsert(
-      {
-        source: "slack",
-        external_id: externalId,
-        sender: username ?? event.user!,
-        subject: channelName ? `#${channelName}` : event.channel!,
-        preview: text.slice(0, 200),
-        body: text,
-        status: "unread",
-        received_at: receivedAt,
-        needs_action: true,
-      },
-      { onConflict: "source,external_id" },
-    )
+    .insert({
+      source: "slack",
+      external_id: externalId,
+      sender: username ?? event.user!,
+      subject: channelName ? `#${channelName}` : event.channel!,
+      preview: text.slice(0, 200),
+      body: text,
+      status: "unread",
+      received_at: receivedAt,
+      needs_action: true,
+    })
     .select("id")
     .single();
   if (error) {
-    console.error("processEvent insert failed", error);
+    // 23505 = unique_violation. A concurrent retry inserted between
+    // our pre-check and our insert; treat as success and return the
+    // existing row's id.
+    if (error.code === "23505") {
+      const { data: dup } = await db
+        .from("inbox_items")
+        .select("id")
+        .eq("source", "slack")
+        .eq("external_id", externalId)
+        .maybeSingle();
+      if (dup) return { inboxItemId: dup.id };
+    }
+    console.error(
+      "processEvent insert failed",
+      error.code,
+      error.message,
+      error.details,
+    );
     return { inboxItemId: null, reason: `db:${error.message}` };
   }
 

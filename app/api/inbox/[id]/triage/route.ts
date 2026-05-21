@@ -3,6 +3,9 @@ import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { triageInboxItem } from "@/lib/triage";
 
+// Two Claude calls (triage + extract_memory) plus DB writes; ~10-15s.
+export const maxDuration = 60;
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },

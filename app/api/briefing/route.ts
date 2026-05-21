@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { format } from "date-fns";
 import { z } from "zod";
+
+// Sonnet briefing generation runs ~6-10s; bump past Vercel's 10s default.
+export const maxDuration = 60;
 import {
   createServerSupabaseClient,
   createServiceRoleClient,

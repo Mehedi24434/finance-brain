@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import HeroLine from "@/components/dashboard/hero-line";
 import DailyBriefingPanel from "@/components/dashboard/panels/daily-briefing-panel";
 import UrgentRisksPanel from "@/components/dashboard/panels/urgent-risks-panel";
 import PendingApprovalsPanel from "@/components/dashboard/panels/pending-approvals-panel";
@@ -16,7 +17,12 @@ export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
   return (
-    <div className="p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <div className="p-4 lg:p-6 space-y-4">
+      <Suspense fallback={null}>
+        <HeroLine />
+      </Suspense>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       {/* Row 1: briefing full width */}
       <div className="lg:col-span-12">
         <Suspense fallback={<PanelSkeleton title="Daily briefing" rows={3} />}>
@@ -82,6 +88,7 @@ export default function DashboardPage() {
         <Suspense fallback={<PanelSkeleton title="Unresolved tasks" rows={6} />}>
           <UnresolvedTasksTable />
         </Suspense>
+      </div>
       </div>
     </div>
   );

@@ -9,6 +9,9 @@ export type IntegrationsState = {
   telegram: TelegramCardState;
   slack: SlackCardState;
   google: GoogleCardState;
+  anthropic: {
+    envConfigured: boolean;
+  };
 };
 
 export default function IntegrationsTab({
@@ -21,7 +24,9 @@ export default function IntegrationsTab({
       <TelegramCard state={initial.telegram} />
       <StaticCard
         name="Anthropic"
-        description="LLM provider key for Claude calls. Connected via environment."
+        description="LLM provider key for Claude calls (briefing, triage, memory extraction, meeting pre-briefs). Connected via environment — no in-app toggle."
+        envConfigured={initial.anthropic.envConfigured}
+        envHint="Set ANTHROPIC_API_KEY on the server."
       />
       <SlackCard state={initial.slack} />
       <GoogleCard state={initial.google} />

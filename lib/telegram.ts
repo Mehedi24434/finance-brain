@@ -62,6 +62,13 @@ async function isTelegramLinked(): Promise<boolean> {
   return Boolean(data?.telegram_user_id);
 }
 
+/**
+ * Send a Telegram DM to Luke. Plain text only — no parse_mode — to avoid
+ * Markdown rendering surprises on user-supplied content (vendor names
+ * with underscores, dollar figures with parens, etc.).
+ *
+ * Chunked at 4000 chars so long briefings still go through.
+ */
 export async function sendMessage(text: string): Promise<void> {
   if (!text.trim()) return;
   const linked = await isTelegramLinked();
@@ -79,7 +86,6 @@ export async function sendMessage(text: string): Promise<void> {
       body: JSON.stringify({
         chat_id: chatId,
         text: chunk,
-        parse_mode: "Markdown",
         disable_web_page_preview: true,
       }),
     });
@@ -214,7 +220,7 @@ function parseWhen(connector: string, phrase: string): string {
 
 // --- Domain helpers ----------------------------------------------------
 
-const ONBOARDING = `*Finance Brain — Telegram*
+const ONBOARDING = `Finance Brain — Telegram
 
 I'm Luke's finance ops bot. Commands:
 
@@ -300,9 +306,9 @@ async function sendUrgentList() {
   const lines = data.map((t, i) => {
     const amt = formatUsd(t.amount_usd);
     const due = t.deadline ? ` · due ${format(new Date(t.deadline), "MMM d")}` : "";
-    return `${i + 1}. ${t.title}${amt ? ` _(${amt})_` : ""}${due}`;
+    return `${i + 1}. ${t.title}${amt ? ` (${amt})` : ""}${due}`;
   });
-  await sendMessage(`*Urgent (${data.length}):*\n${lines.join("\n")}`);
+  await sendMessage(`Urgent (${data.length}):\n${lines.join("\n")}`);
 }
 
 async function sendTodaysBriefing(opts: { generateIfMissing: boolean }) {
@@ -336,7 +342,7 @@ async function sendTodaysBriefing(opts: { generateIfMissing: boolean }) {
     );
     return;
   }
-  await sendMessage(`*Briefing — ${today}*\n\n${briefing.executive_summary}`);
+  await sendMessage(`Briefing — ${today}\n\n${briefing.executive_summary}`);
 }
 
 async function handleFreeformText(text: string, audioUrl: string | null) {
@@ -378,7 +384,7 @@ async function handleFreeformText(text: string, audioUrl: string | null) {
     const when = format(new Date(remindAt), "EEE MMM d · HH:mm");
     await sendMessage(
       id
-        ? `Reminder set for *${when}*:\n${result.title}`
+        ? `Reminder set for ${when}:\n${result.title}`
         : `Failed to save the reminder.`,
     );
     return;
@@ -424,7 +430,7 @@ export async function handleUpdate(update: TelegramUpdate): Promise<void> {
     if (transcription.success) {
       text = transcription.text;
       audioUrl = transcription.audioUrl;
-      await sendMessage(`_Transcribed:_ ${text}`);
+      await sendMessage(`Transcribed: ${text}`);
     } else {
       audioUrl = transcription.audioUrl;
       const taskId = await createTaskFromTelegram({
@@ -450,7 +456,7 @@ export async function handleUpdate(update: TelegramUpdate): Promise<void> {
   }
   if (/^\/capture\s+/i.test(text)) {
     const title = text.replace(/^\/capture\s+/i, "").trim();
-    if (!title) return sendMessage("Usage: `/capture <text>`");
+    if (!title) return sendMessage("Usage: /capture <text>");
     const id = await createTaskFromTelegram({
       title,
       sourceRef: audioUrl,
@@ -478,7 +484,7 @@ export async function handleUpdate(update: TelegramUpdate): Promise<void> {
     const when = format(new Date(remindAt), "EEE MMM d · HH:mm");
     return sendMessage(
       id
-        ? `Reminder set for *${when}*:\n${subject}`
+        ? `Reminder set for ${when}:\n${subject}`
         : "Failed to save the reminder.",
     );
   }

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import TriageButton from "@/components/dashboard/triage-button";
+import AiTag from "@/components/dashboard/ai-tag";
 
 export type InboxRowItem = {
   id: string;
@@ -138,9 +139,12 @@ export default function InboxRow({ item }: { item: InboxRowItem }) {
             )}
           </div>
 
-          <div className="border-t border-border pt-3 space-y-2">
-            <div className="text-[10px] uppercase tracking-wider text-text-tertiary">
-              Suggested response
+          <div className="border-t border-border pt-3 space-y-2 relative">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] uppercase tracking-wider text-text-tertiary">
+                Suggested response
+              </div>
+              {item.suggested_response && <AiTag inline />}
             </div>
             {item.suggested_response ? (
               editing ? (

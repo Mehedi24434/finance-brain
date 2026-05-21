@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "./sidebar";
 import TopBar from "./top-bar";
+import CommandPalette from "./command-palette";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -14,6 +15,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <TopBar />
         <div className="flex-1 overflow-auto">{children}</div>
       </div>
+      <CommandPalette />
     </div>
   );
 }

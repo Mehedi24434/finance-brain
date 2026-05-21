@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import AiTag from "./ai-tag";
 
 export default function MeetingBriefSheet({
   meetingId,
@@ -79,8 +80,11 @@ export default function MeetingBriefSheet({
         </SheetHeader>
         <div className="px-4 pb-4 space-y-3 overflow-y-auto">
           {preBrief ? (
-            <div className="text-[13px] text-text-primary leading-relaxed whitespace-pre-wrap">
-              {preBrief}
+            <div className="relative pr-7">
+              <AiTag />
+              <div className="text-[13px] text-text-primary leading-relaxed whitespace-pre-wrap">
+                {preBrief}
+              </div>
             </div>
           ) : (
             <div className="text-text-tertiary text-xs">

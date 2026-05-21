@@ -5,6 +5,9 @@ import { syncRecent } from "@/lib/gmail";
 import { syncUpcoming } from "@/lib/calendar";
 import { updateLastSync } from "@/lib/google-oauth";
 
+// Same cost as /api/cron/sync — ~15-25s.
+export const maxDuration = 60;
+
 export async function POST() {
   const auth = await createServerSupabaseClient();
   const {

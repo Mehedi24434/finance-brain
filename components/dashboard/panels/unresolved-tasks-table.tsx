@@ -115,6 +115,7 @@ export default async function UnresolvedTasksTable({
                       className={cn(
                         "absolute left-0 top-2 bottom-2 w-[3px] rounded-full",
                         STRIPE_BG[sev],
+                        sev === "urgent" && "urgent-stripe",
                       )}
                     />
                     <Link
