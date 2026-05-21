@@ -1,9 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 
 const KEY = "fb.hero.dismissed";
+const SAME_TAB_EVENT = "fb.hero.dismissed:changed";
+
+// Read localStorage via useSyncExternalStore so SSR returns "not
+// dismissed" (banner visible), the client picks up the real value on
+// hydration, and React handles the mismatch without warnings. This
+// also eliminates the set-state-in-effect lint violation that the
+// previous useEffect-based approach produced.
+function subscribe(callback: () => void) {
+  // The native `storage` event only fires across tabs, so we also
+  // listen for a custom event we dispatch ourselves on same-tab
+  // dismiss.
+  window.addEventListener("storage", callback);
+  window.addEventListener(SAME_TAB_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(SAME_TAB_EVENT, callback);
+  };
+}
+
+function getSnapshot() {
+  try {
+    return window.localStorage.getItem(KEY) === "1";
+  } catch {
+    // Private-mode browsers throw on localStorage access.
+    return false;
+  }
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 export default function HeroLineDismiss({
   open,
@@ -14,29 +45,19 @@ export default function HeroLineDismiss({
   urgent: number;
   aging: number;
 }) {
-  const [mounted, setMounted] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const dismissed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  useEffect(() => {
-    setMounted(true);
-    try {
-      if (typeof window !== "undefined") {
-        setDismissed(window.localStorage.getItem(KEY) === "1");
-      }
-    } catch {
-      // localStorage unavailable in private mode — keep visible.
-    }
-  }, []);
-
-  if (!mounted || dismissed) return null;
+  if (dismissed) return null;
 
   function dismiss() {
-    setDismissed(true);
     try {
       window.localStorage.setItem(KEY, "1");
     } catch {
       // ignore
     }
+    // The `storage` event doesn't fire for same-tab writes, so prod
+    // a custom one to trigger useSyncExternalStore to re-evaluate.
+    window.dispatchEvent(new Event(SAME_TAB_EVENT));
   }
 
   return (

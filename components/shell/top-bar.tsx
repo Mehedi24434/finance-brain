@@ -1,18 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { format } from "date-fns";
 import QuickCapture from "./quick-capture";
 
+// The date depends on the user's local timezone — must be a client-side
+// value, but rendering it during render would cause hydration mismatch
+// (server is UTC, client is local). useSyncExternalStore is React's
+// documented escape hatch: it returns getServerSnapshot during SSR and
+// getSnapshot on the client, with no hydration warning and no
+// set-state-in-effect rule violation.
+const noopSubscribe = () => () => {};
+const getTodayClient = () => format(new Date(), "EEEE, MMM d");
+const getTodayServer = () => "";
+
 export default function TopBar() {
-  // Computing the date during render would mismatch between server SSR
-  // (UTC) and client hydration (user's local TZ) at the day boundary.
-  // Defer to a post-mount effect so the first paint is empty and the
-  // real value lands on the client only.
-  const [today, setToday] = useState<string>("");
-  useEffect(() => {
-    setToday(format(new Date(), "EEEE, MMM d"));
-  }, []);
+  const today = useSyncExternalStore(
+    noopSubscribe,
+    getTodayClient,
+    getTodayServer,
+  );
 
   const env = process.env.NEXT_PUBLIC_ENV ?? "dev";
 

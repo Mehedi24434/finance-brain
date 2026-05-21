@@ -9,24 +9,6 @@ type SyncResult = {
   upserted: number;
 };
 
-const FINANCE_TITLE_KEYWORDS = [
-  "board",
-  "audit",
-  "close",
-  "budget",
-  "forecast",
-  "capex",
-  "treasury",
-  "vendor",
-  "procurement",
-  "investor",
-  "tax",
-  "compliance",
-  "review",
-  "1:1",
-  "1-1",
-];
-
 // Returns a finance_category enum value. meeting_notes.category is NOT NULL
 // (default 'other'), so we always return a concrete string — passing null
 // would override the column default and fail the not-null constraint.

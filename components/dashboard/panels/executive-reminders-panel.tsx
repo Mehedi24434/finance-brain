@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import EmptyState from "../empty-state";
 import PanelShell from "../panel-shell";
 import { severityForPriority, timeLabel, type Severity } from "@/lib/panels";
+import { daysFromNowIso } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
 const CHANNEL_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -21,7 +22,7 @@ const STRIPE_BG: Record<Severity, string> = {
 
 export default async function ExecutiveRemindersPanel() {
   const db = createServiceRoleClient();
-  const inDay = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const inDay = daysFromNowIso(1);
   const { data } = await db
     .from("reminders")
     .select("id, title, notes, priority, remind_at, channel, category")

@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { OPEN_TASK_STATUSES, formatUsd } from "@/lib/panels";
+import { daysAgoIso, nowMs } from "@/lib/time";
 import PanelShell from "../panel-shell";
 import EmptyState from "../empty-state";
 import AiTag from "../ai-tag";
@@ -17,7 +18,7 @@ function generatedAgo(iso: string | null): string {
   if (!iso) return "—";
   const minutes = Math.max(
     0,
-    Math.round((Date.now() - new Date(iso).getTime()) / 60_000),
+    Math.round((nowMs() - new Date(iso).getTime()) / 60_000),
   );
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
@@ -32,7 +33,7 @@ export default async function DailyBriefingPanel() {
   const today = todayKey();
   const dayStart = new Date(`${today}T00:00:00Z`).toISOString();
   const dayEnd = new Date(`${today}T23:59:59Z`).toISOString();
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const threeDaysAgo = daysAgoIso(3);
 
   const [briefingRes, openUrgent, approvals, aging, meetings] = await Promise.all([
     db

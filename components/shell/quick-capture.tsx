@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,17 +28,29 @@ declare global {
   }
 }
 
+// Browser-only feature detect. useSyncExternalStore is the React-19
+// way to read window state without triggering hydration warnings or
+// the set-state-in-effect lint rule.
+const noopSubscribe = () => () => {};
+const getVoiceSupportedClient = () =>
+  Boolean(window.SpeechRecognition ?? window.webkitSpeechRecognition);
+const getVoiceSupportedServer = () => true;
+
 export default function QuickCapture() {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(true);
+  const voiceSupported = useSyncExternalStore(
+    noopSubscribe,
+    getVoiceSupportedClient,
+    getVoiceSupportedServer,
+  );
   const recognitionRef = useRef<RecognitionLike | null>(null);
 
+  // Abort any in-flight recognition on unmount. No setState here, so the
+  // set-state-in-effect rule no longer fires.
   useEffect(() => {
-    const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
-    setVoiceSupported(Boolean(Ctor));
     return () => recognitionRef.current?.abort();
   }, []);
 

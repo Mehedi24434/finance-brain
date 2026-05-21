@@ -174,7 +174,6 @@ export async function syncRecent(): Promise<SyncResult> {
 function rfc2047EncodeIfNeeded(s: string): string {
   // If the string contains only printable ASCII, no encoding needed.
   // Otherwise, MIME-encode as UTF-8/base64.
-  // eslint-disable-next-line no-control-regex
   if (/^[\x00-\x7F]*$/.test(s)) return s;
   return `=?UTF-8?B?${Buffer.from(s, "utf8").toString("base64")}?=`;
 }

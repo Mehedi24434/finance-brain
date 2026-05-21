@@ -6,7 +6,6 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
-  Mic,
   PenLine,
   Users,
   Voicemail,

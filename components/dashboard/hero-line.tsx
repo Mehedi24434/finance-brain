@@ -1,12 +1,11 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { OPEN_TASK_STATUSES, ageDays } from "@/lib/panels";
+import { daysAgoIso } from "@/lib/time";
 import HeroLineDismiss from "./hero-line-dismiss";
 
 export default async function HeroLine() {
   const db = createServiceRoleClient();
-  const threeDaysAgo = new Date(
-    Date.now() - 3 * 24 * 60 * 60 * 1000,
-  ).toISOString();
+  const threeDaysAgo = daysAgoIso(3);
 
   const [openRes, urgentRes, agingRes] = await Promise.all([
     db
