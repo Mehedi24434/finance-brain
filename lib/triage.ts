@@ -1,6 +1,7 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { callClaude } from "@/lib/claude";
+import { sendMessage } from "@/lib/telegram";
 
 const PRIORITY_ENUM = ["low", "medium", "high", "urgent"] as const;
 type PriorityEnum = (typeof PRIORITY_ENUM)[number];
@@ -194,7 +195,8 @@ export async function triageInboxItem(id: string): Promise<{
     }
   }
 
-  // 4. If urgent + finance_risk, schedule a 30-min telegram nudge.
+  // 4. If urgent + finance_risk, schedule a 30-min telegram nudge AND
+  //    push an immediate Telegram alert.
   let reminderId: string | null = null;
   if (triage.classification === "urgent" && triage.finance_risk) {
     const { data: reminder } = await db
@@ -211,6 +213,16 @@ export async function triageInboxItem(id: string): Promise<{
       .select("id")
       .single();
     reminderId = reminder?.id ?? null;
+
+    try {
+      await sendMessage(
+        `*Urgent finance email* from ${item.sender ?? "(unknown sender)"}:\n` +
+          `${item.subject ?? "(no subject)"}\n\n` +
+          `Needs your eyes in the next 30 min.`,
+      );
+    } catch (err) {
+      console.error("triage telegram alert failed", err);
+    }
   }
 
   // 5. Audit log for the triage event.

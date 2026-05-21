@@ -13,10 +13,19 @@ export default async function SettingsPage() {
     .limit(1)
     .maybeSingle();
 
+  const integrations = {
+    telegram: {
+      linked: Boolean(profile?.telegram_user_id),
+      envConfigured: Boolean(
+        process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_USER_ID,
+      ),
+    },
+  };
+
   return (
     <div className="p-6 max-w-4xl">
       <h1 className="text-lg font-semibold mb-4">Settings</h1>
-      <SettingsTabs initialProfile={profile} />
+      <SettingsTabs initialProfile={profile} integrations={integrations} />
     </div>
   );
 }

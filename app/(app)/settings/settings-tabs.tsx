@@ -2,13 +2,17 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileTab, { type ProfileFormValues } from "./tabs/profile-tab";
-import IntegrationsTab from "./tabs/integrations-tab";
+import IntegrationsTab, {
+  type IntegrationsState,
+} from "./tabs/integrations-tab";
 import DemoControlsTab from "./tabs/demo-controls-tab";
 
 export default function SettingsTabs({
   initialProfile,
+  integrations,
 }: {
   initialProfile: ProfileFormValues | null;
+  integrations: IntegrationsState;
 }) {
   return (
     <Tabs defaultValue="profile" className="space-y-4">
@@ -21,7 +25,7 @@ export default function SettingsTabs({
         <ProfileTab initial={initialProfile} />
       </TabsContent>
       <TabsContent value="integrations">
-        <IntegrationsTab />
+        <IntegrationsTab initial={integrations} />
       </TabsContent>
       <TabsContent value="demo">
         <DemoControlsTab />

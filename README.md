@@ -46,27 +46,89 @@ Click the mic to start, the icon pulses red while recording, click again
 to stop. Interim results stream into the input as you speak; press
 Enter to submit.
 
+## Telegram bot
+
+The bot delivers daily briefings, urgent-email alerts, and accepts
+voice quick-capture from your phone.
+
+### One-time setup
+
+1. Create a bot via [@BotFather](https://t.me/BotFather), copy the
+   token, then chat with [@userinfobot](https://t.me/userinfobot) to get
+   your numeric user id.
+2. Set these env vars (locally in `.env.local`, on Vercel as project env):
+   - `TELEGRAM_BOT_TOKEN` — from BotFather
+   - `TELEGRAM_USER_ID` — your numeric Telegram user id
+   - `TELEGRAM_WEBHOOK_SECRET` — any ~32-char random string
+   - `OPENAI_API_KEY` — for Whisper voice transcription
+   - `NEXT_PUBLIC_APP_URL` — your https Vercel domain (or ngrok URL for
+     local dev)
+3. Register the webhook against your deployed URL:
+   ```
+   pnpm register-telegram
+   ```
+   This calls Telegram's `setWebhook` to route updates to
+   `${NEXT_PUBLIC_APP_URL}/api/webhooks/telegram/${TELEGRAM_WEBHOOK_SECRET}`.
+4. Open the app's **Settings → Integrations → Telegram**, click
+   **Link Telegram**. (This writes `TELEGRAM_USER_ID` into
+   `executive_profile.telegram_user_id` — it's the gate that allows the
+   app to send outbound messages.)
+
+To remove the webhook later: `pnpm delete-telegram-webhook`.
+
+### Commands
+
+- `/briefing` — generate and send today's exec briefing
+- `/capture <text>` — quick-capture a task (no parsing)
+- `/help` — full command list
+
+Free-form text and voice messages are interpreted via Claude
+(`extract_tasks`). Voice notes go through OpenAI Whisper first; if
+transcription fails, the original audio URL is saved on a stub task.
+
+### Where messages come from
+
+- **`/api/briefing`** with `{ deliver: true }` → sends the
+  `executive_summary` to your chat.
+- **`/api/inbox/[id]/triage`** for items classified as `urgent` with
+  `finance_risk=true` → sends an immediate alert with sender/subject.
+
+The outbound `sendMessage` is gated on the DB column being set, so
+nothing leaks until you've explicitly clicked **Link Telegram**.
+
 ## Project layout
 
 ```
 app/
-  (auth)/login/          – sign-in / sign-up card
-  (app)/                 – authenticated shell (Sidebar + TopBar)
-    page.tsx             – Dashboard
-    inbox/page.tsx       – Inbox placeholder
-    tasks/page.tsx       – Tasks placeholder
-    memory/page.tsx      – Memory placeholder
-    settings/            – Tabs: Profile, Integrations, Demo controls
+  (auth)/login/                       – sign-in / sign-up card
+  (app)/                              – authenticated shell
+    page.tsx                          – Dashboard
+    inbox/, tasks/, memory/           – list pages
+    tasks/[id]/                       – task detail
+    settings/                         – Profile / Integrations / Demo controls
   api/
-    tasks/route.ts       – GET list / POST create
-    settings/profile/    – PATCH single executive_profile row
+    tasks/, followups/                – CRUD + per-item actions
+    inbox/[id]/triage                 – Claude triage of one item
+    inbox/triage-all                  – batch triage
+    briefing                          – GET today / POST generate
+    settings/profile, integrations/   – profile + integration toggles
+    webhooks/telegram/[secret]        – Telegram webhook entry
 components/
-  ui/                    – shadcn primitives
-  shell/                 – AppShell, Sidebar, TopBar, QuickCapture (+ mic)
+  ui/                                 – shadcn primitives
+  shell/                              – AppShell, Sidebar, TopBar, QuickCapture
+  dashboard/                          – panels, ItemCard, FilterChips, …
 lib/
-  supabase.ts            – browser, server (SSR), and service-role clients
-  utils.ts               – `cn` helper from shadcn
-middleware.ts            – session refresh + auth gate for (app)/*
+  supabase/                           – browser + server + service clients
+  panels.ts                           – open-set, severity, score, formatters
+  prompts.ts                          – Claude task definitions
+  claude.ts                           – callClaude + persistent context loader
+  triage.ts                           – triageInboxItem helper
+  briefing-service.ts                 – generateBriefing helper
+  telegram.ts                         – sendMessage + handleUpdate
+  telegram-auth.ts                    – env-gated user check
+scripts/
+  register-telegram-webhook.ts        – tsx one-off setWebhook helper
+proxy.ts                              – session refresh + auth gate for (app)/*
 ```
 
 ## Auth model
