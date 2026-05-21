@@ -56,11 +56,17 @@ export default async function UnresolvedTasksTable({
   let query = db
     .from("tasks")
     .select(
-      "id, title, category, priority, status, deadline, amount_usd, assigned_to, source, updated_at",
+      "id, title, category, priority, status, deadline, amount_usd, assigned_to, source, updated_at, created_at",
       { count: "exact" },
     )
-    .order("priority", { ascending: false })
-    .order("deadline", { ascending: true, nullsFirst: false })
+    // Sort newest first. The earlier "priority DESC, deadline ASC NULLS
+    // LAST" sort buried freshly-captured tasks (medium, no deadline)
+    // below every urgent + every dated medium-priority seed row, so the
+    // user could land 5 tasks via voice and see none of them in the
+    // dashboard's 25-row table. Urgency is already foregrounded on
+    // UrgentRisksPanel, OPQ, and the pulsing severity stripe — this
+    // table's job is "everything not done, most recent first".
+    .order("created_at", { ascending: false })
     .limit(pageSize);
 
   if (!filter?.status || filter.status === "open") {

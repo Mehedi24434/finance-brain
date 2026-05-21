@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { generatePrebrief } from "@/lib/calendar";
@@ -26,6 +27,9 @@ export async function POST(
 
   try {
     const result = await generatePrebrief(parsed.data);
+    // pre_brief change flips the "Briefed" indicator in
+    // UpcomingMeetingsPanel.
+    revalidatePath("/");
     return NextResponse.json({
       pre_brief: result.preBrief,
       key_amounts: result.keyAmounts,

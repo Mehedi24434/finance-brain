@@ -1,5 +1,6 @@
 import "server-only";
 import { format } from "date-fns";
+import { revalidatePath } from "next/cache";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { callClaude } from "@/lib/claude";
 import { OPEN_TASK_STATUSES, formatUsd } from "@/lib/panels";
@@ -248,7 +249,11 @@ async function createTaskFromTelegram(input: {
     .insert({
       title: input.title.slice(0, 500),
       description: input.notes ?? null,
-      category: input.category ?? null,
+      // tasks.category is NOT NULL DEFAULT 'other'. Passing null
+      // overrides the default and fails 23502. 'operations' is the
+      // right fallback for Telegram captures — voice notes and quick
+      // jots from the road are almost always operational.
+      category: input.category ?? "operations",
       priority: input.priority ?? "medium",
       status: "not_started",
       source: "telegram",
@@ -257,9 +262,20 @@ async function createTaskFromTelegram(input: {
     .select("id")
     .single();
   if (error) {
-    console.error("createTaskFromTelegram failed", error);
+    console.error(
+      "createTaskFromTelegram failed",
+      error.code,
+      error.message,
+      error.details,
+    );
     return null;
   }
+
+  // Flush dashboard + tasks list so the next browser request after Luke
+  // captures from Telegram picks up the new row.
+  revalidatePath("/");
+  revalidatePath("/tasks");
+
   return data.id;
 }
 
@@ -287,6 +303,10 @@ async function createReminderFromTelegram(input: {
     console.error("createReminderFromTelegram failed", error);
     return null;
   }
+
+  // ExecutiveRemindersPanel pulls scheduled reminders.
+  revalidatePath("/");
+
   return data.id;
 }
 

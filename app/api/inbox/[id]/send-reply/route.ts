@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   createServerSupabaseClient,
@@ -57,6 +58,10 @@ export async function POST(
 
   try {
     const result = await sendReply(idParsed.data, replyBody);
+    // sendReply flips inbox_item.status to 'actioned' — flush dashboard
+    // + inbox so the row disappears from the triage panel.
+    revalidatePath("/");
+    revalidatePath("/inbox");
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     return NextResponse.json(

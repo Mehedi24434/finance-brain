@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   createServerSupabaseClient,
@@ -45,6 +46,10 @@ export async function POST(
     entity_id: id,
     payload: { actor: user.email ?? user.id, last_contacted: now },
   });
+
+  // last_contacted moves the row out of the aging bucket on the
+  // dashboard's ProcurementFollowupsPanel.
+  revalidatePath("/");
 
   return NextResponse.json({ followup: data });
 }

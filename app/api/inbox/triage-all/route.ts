@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   createServerSupabaseClient,
   createServiceRoleClient,
@@ -45,6 +46,12 @@ export async function POST() {
     event_type: "inbox.triage_all",
     payload: { actor: user.email ?? user.id, triaged, failed, attempted: ids.length },
   });
+
+  if (triaged > 0) {
+    revalidatePath("/");
+    revalidatePath("/inbox");
+    revalidatePath("/tasks");
+  }
 
   return NextResponse.json({ triaged, failed, attempted: ids.length });
 }

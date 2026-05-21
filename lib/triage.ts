@@ -203,7 +203,10 @@ export async function triageInboxItem(id: string): Promise<{
       .from("reminders")
       .insert({
         title: `Urgent: ${item.subject ?? "(no subject)"}`,
-        category: triage.extracted_tasks[0]?.category ?? null,
+        // reminders.category is NOT NULL DEFAULT 'other'. Mirror the
+        // parent task's category if Claude extracted one; otherwise
+        // fall back to 'other'.
+        category: triage.extracted_tasks[0]?.category ?? "other",
         priority: "urgent",
         status: "scheduled",
         remind_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),

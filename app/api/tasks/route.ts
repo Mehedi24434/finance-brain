@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 
@@ -102,7 +103,11 @@ export async function POST(request: Request) {
     .insert({
       title: parsed.data.title,
       description: parsed.data.description ?? null,
-      category: parsed.data.category ?? null,
+      // tasks.category is NOT NULL with default 'other'. Passing null
+      // overrides the column default, so we always supply a value.
+      // 'operations' is the right fallback for Luke's quick-captures —
+      // voice notes, manual jots — they're almost always operational.
+      category: parsed.data.category ?? "operations",
       priority: parsed.data.priority ?? "medium",
       status: parsed.data.status ?? "not_started",
       deadline: parsed.data.deadline ?? null,
@@ -118,5 +123,13 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Invalidate any route that renders tasks server-side. router.refresh()
+  // on the client only flushes the page the user is currently on; if
+  // they captured from the topbar on /settings and then navigate to /
+  // the dashboard would otherwise serve a stale RSC payload.
+  revalidatePath("/");
+  revalidatePath("/tasks");
+
   return NextResponse.json({ task: data }, { status: 201 });
 }

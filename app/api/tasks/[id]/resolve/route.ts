@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   createServerSupabaseClient,
@@ -48,6 +49,12 @@ export async function POST(
     entity_id: id,
     payload: { actor: user.email ?? user.id, completed_at: completedAt },
   });
+
+  // Flip a task off the open list, hero counter, OPQ rank, briefing
+  // signals. Invalidate dashboard + tasks list + the detail page.
+  revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
 
   return NextResponse.json({ task: data });
 }

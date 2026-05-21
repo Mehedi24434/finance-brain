@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   createServerSupabaseClient,
@@ -79,6 +80,12 @@ export async function POST(
     entity_id: id,
     payload: { actor: user.email ?? user.id, remind_at: until, reminder_id: reminder.id },
   });
+
+  // Status flipped to 'waiting' + new reminder created — both surface
+  // on the dashboard and tasks list.
+  revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
 
   return NextResponse.json({ task, reminder });
 }

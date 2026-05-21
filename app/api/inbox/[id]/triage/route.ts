@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { triageInboxItem } from "@/lib/triage";
@@ -26,6 +27,11 @@ export async function POST(
 
   try {
     const result = await triageInboxItem(parsed.data);
+    // Triage flips classification on the inbox row AND inserts new
+    // tasks from extracted_tasks. Both surface on the dashboard.
+    revalidatePath("/");
+    revalidatePath("/inbox");
+    revalidatePath("/tasks");
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(

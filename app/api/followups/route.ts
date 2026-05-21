@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   createServerSupabaseClient,
@@ -74,7 +75,9 @@ export async function POST(request: Request) {
       notes: parsed.data.notes ?? null,
       contact_name: parsed.data.contact_name ?? null,
       contact_email: parsed.data.contact_email ?? null,
-      category: parsed.data.category ?? null,
+      // followups.category is NOT NULL DEFAULT 'other'. Passing null
+      // overrides the column default and fails 23502.
+      category: parsed.data.category ?? "other",
       priority: parsed.data.priority ?? "medium",
       status: "open",
       due_date: parsed.data.due_date ?? null,
@@ -93,6 +96,14 @@ export async function POST(request: Request) {
     entity_id: data.id,
     payload: { actor: user.email ?? user.id, related_task_id: parsed.data.related_task_id ?? null },
   });
+
+  // ProcurementFollowupsPanel + briefing aging counters pull from
+  // followups. Also flush the task detail page if this followup links
+  // to one (the detail page lists linked followups).
+  revalidatePath("/");
+  if (parsed.data.related_task_id) {
+    revalidatePath(`/tasks/${parsed.data.related_task_id}`);
+  }
 
   return NextResponse.json({ followup: data }, { status: 201 });
 }
