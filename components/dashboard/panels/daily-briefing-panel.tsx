@@ -1,9 +1,12 @@
 import { format } from "date-fns";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { OPEN_TASK_STATUSES } from "@/lib/panels";
-import { Button } from "@/components/ui/button";
 import PanelShell from "../panel-shell";
 import EmptyState from "../empty-state";
+import {
+  GenerateBriefingButton,
+  RegenerateBriefingIcon,
+} from "../briefing-actions";
 
 function todayKey(date = new Date()) {
   return format(date, "yyyy-MM-dd");
@@ -72,16 +75,13 @@ export default async function DailyBriefingPanel() {
     <PanelShell
       title={`Daily briefing · ${format(new Date(), "EEE MMM d")}`}
       counter={briefing ? (briefing.delivered ? "Delivered" : "Ready") : "Pending"}
+      headerExtras={briefing ? <RegenerateBriefingIcon /> : null}
     >
       {!briefing ? (
         <EmptyState
           title="No briefing generated yet today"
-          hint="Generate today's briefing once Claude is wired up in Session 3."
-          action={
-            <Button variant="outline" size="sm" disabled title="Wire up in Session 3">
-              Generate today&rsquo;s briefing
-            </Button>
-          }
+          hint="Pulls the dashboard signals together into a one-screen exec summary."
+          action={<GenerateBriefingButton />}
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4">

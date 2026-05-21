@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import TriageButton from "@/components/dashboard/triage-button";
 
 export type InboxRowItem = {
   id: string;
@@ -57,15 +58,17 @@ export default function InboxRow({ item }: { item: InboxRowItem }) {
 
   return (
     <li className="border-b border-border last:border-b-0">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
+      <div
         className={cn(
-          "w-full text-left px-3 py-2.5 hover:bg-hover/40 transition-colors",
+          "flex items-center gap-2 px-3 py-2.5 hover:bg-hover/40 transition-colors",
           item.status === "unread" && "bg-raised/20",
         )}
       >
-        <div className="flex items-start gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-start gap-2 min-w-0 flex-1 text-left"
+        >
           {open ? (
             <ChevronDown className="size-3.5 text-text-tertiary shrink-0 mt-0.5" />
           ) : (
@@ -100,8 +103,11 @@ export default function InboxRow({ item }: { item: InboxRowItem }) {
               </div>
             )}
           </div>
-        </div>
-      </button>
+        </button>
+        {!item.classification && (
+          <TriageButton inboxId={item.id} className="shrink-0" />
+        )}
+      </div>
 
       {open && (
         <div className="px-3 pb-3 space-y-3 bg-raised/15 border-t border-border">
